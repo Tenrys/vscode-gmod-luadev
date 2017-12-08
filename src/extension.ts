@@ -77,21 +77,29 @@ function getPlayerList(): void {
 }
 
 let nextUpdate = 0;
-function sendCodeUpdate(e) {
+let updateAsap = false;
+let finished = false;
+setInterval(() => {
+	if (updateAsap && nextUpdate < Date.now()) {
+		if (!finished) {
+			sendCodeUpdate()
+		}
+		updateAsap = false;
+	}
+}, 0)
+function sendCodeUpdate(e?) {
 
 	const config = vscode.workspace.getConfiguration("gmod-luadev");
 
 	if (nextUpdate > Date.now()) {
-		setTimeout(() => {
-			sendCodeUpdate(undefined)
-		}, 300);
+		updateAsap = true;
 		return;
 	}
-
+	finished = false;
 	nextUpdate = Date.now() + 300
 
 	let document = vscode.window.activeTextEditor.document;
-	if (e.document) {
+	if (e && e.document) {
 		document = e.document;
 	}
 	let text = document.getText();
@@ -156,7 +164,7 @@ function clearCode() {
 				vscode.window.showErrorMessage("LuaDev Socket Error - " + ex.message);
 		});
 		socket.end();
-
+		finished = true;
 	}
 }
 
