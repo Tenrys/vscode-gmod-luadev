@@ -78,32 +78,32 @@ function getPlayerList(): void {
 
 // Exports /////////////////////////////////////////////////////////////////////
 
-let doCodeUpdate = true;
-function sendCodeUpdate() {
+function sendCodeUpdate( e ) {
 	const config = vscode.workspace.getConfiguration("gmod-luadev");
-	const document = vscode.window.activeTextEditor.document
+	let document = vscode.window.activeTextEditor.document;
+	if ( e.document ) {
+		document = e.document;
+	}
+	let text = document.getText();
 
-	if (config.get("chattextchanged", false)) {
-		if (doCodeUpdate) {
-			doCodeUpdate = false;
-			setTimeout( () => {
-				const socket = new net.Socket();
-				socket.connect(config.get("port", 27099));
-				socket.write(
-					"chatTextChanged" + "\n" +
-					document.getText()
-				);
-				socket.on("error", (ex) => {
-					if (ex.name == "ECONNREFUSED")
-						console.log(
-							"Could not connect to LuaDev!");
-					else
-						vscode.window.showErrorMessage(ex.message);
-				});
-				socket.end();
-				doCodeUpdate = true;
-			}, 300)
-		}
+	if ( !document.languageId.match("g?lua") ) {
+		text = "In a " + document.languageId + " file.";
+	}
+
+	let fileName = document.fileName;
+	if ( fileName.length > 32 ) {
+		fileName = "..." + fileName.substr(-32);
+	}
+	text = "[VSCode - " + fileName + "]\n\n" + text;
+
+	if ( config.get("chattextchanged", false) ) {
+		const socket = new net.Socket();
+		socket.connect( config.get("port", 27099) );
+		socket.write(
+			"chatTextChanged" + "\n" +
+			text
+		);
+		socket.end();
 	}
 }
 
@@ -120,25 +120,25 @@ export function activate( context: vscode.ExtensionContext ): void {
 	);
 
 	vscode.workspace.onDidChangeTextDocument(sendCodeUpdate);
-	vscode.workspace.onDidOpenTextDocument(sendCodeUpdate);
+	vscode.window.onDidChangeActiveTextEditor(sendCodeUpdate);
 	vscode.window.onDidChangeWindowState( (e) => {
 		if (e.focused) {
-			sendCodeUpdate();
+			sendCodeUpdate(e);
 		} else {
 			const config = vscode.workspace.getConfiguration("gmod-luadev");
 
-			if (config.get("chattextchanged", false)) {
+			if ( config.get("chattextchanged", false) ) {
 				const socket = new net.Socket();
-				socket.connect(config.get("port", 27099));
+				socket.connect( config.get("port", 27099) );
 				socket.write(
-					"finishChat"
+					"finishChat" + "\n"
 				);
 				socket.on("error", (ex) => {
 					if (ex.name == "ECONNREFUSED")
 						console.log(
 							"Could not connect to LuaDev!");
 					else
-						vscode.window.showErrorMessage(ex.message);
+						vscode.window.showErrorMessage("LuaDev Socket Error - " + ex.message);
 				});
 				socket.end();
 			}
