@@ -54,6 +54,8 @@ following keybinding shortcut:
 - `gmod-luadev.hidescriptname` (Default: `false`)
 	- If enabled, GMod LuaDev will send files with a blank filename, hiding
 	  the real filename.
+- `gmod-luadev.chattextchanged` (Default: `false`)
+	- If true, everytime you change the document it will be transmitted to Garry's Mod so it can be used by chat addons like chat over head.
 
 ## Other
 
