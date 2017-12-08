@@ -76,10 +76,19 @@ function getPlayerList(): void {
 
 }
 
+let nextUpdate = 0;
 function sendCodeUpdate(e) {
 
 	const config = vscode.workspace.getConfiguration("gmod-luadev");
 
+	if (nextUpdate > Date.now()) {
+		setTimeout(() => {
+			sendCodeUpdate(undefined)
+		}, 100);
+		return;
+	}
+
+	nextUpdate = Date.now() + 300
 
 	let document = vscode.window.activeTextEditor.document;
 	if (e.document) {
