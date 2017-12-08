@@ -8,40 +8,40 @@ import * as vscode from "vscode";
 
 // Functions ///////////////////////////////////////////////////////////////////
 
-function send( realm: string, client?: string ): void {
+function send(realm: string, client?: string): void {
 
 	// Parameter Defaults //
 
-	if ( client == null ) client = "";
+	if (client == null) client = "";
 
 	// Common //
 
-	const config = vscode.workspace.getConfiguration( "gmod-luadev" )
+	const config = vscode.workspace.getConfiguration("gmod-luadev")
 	const document = vscode.window.activeTextEditor.document;
 
 	// Document Title //
 
 	const document_title =
-		config.get( "hidescriptname", false )
+		config.get("hidescriptname", false)
 			? "_"
-			: path.basename( document.uri.fsPath );
+			: path.basename(document.uri.fsPath);
 
 	// Open Socket //
 
 	const socket = new net.Socket();
-	socket.connect( config.get( "port", 27099 ) );
+	socket.connect(config.get("port", 27099));
 	socket.write(
 		realm + "\n" +
 		document_title + "\n" +
 		client + "\n" +
 		document.getText()
 	);
-	socket.on( "error", ( ex ) => {
-		if ( ex.name == "ECONNREFUSED" )
+	socket.on("error", (ex) => {
+		if (ex.name == "ECONNREFUSED")
 			vscode.window.showErrorMessage(
-				"Could not connect to LuaDev!" );
+				"Could not connect to LuaDev!");
 		else
-			vscode.window.showErrorMessage( ex.message );
+			vscode.window.showErrorMessage(ex.message);
 	});
 	socket.end();
 
@@ -49,15 +49,15 @@ function send( realm: string, client?: string ): void {
 
 function getPlayerList(): void {
 
-	const config = vscode.workspace.getConfiguration( "gmod-luadev" )
+	const config = vscode.workspace.getConfiguration("gmod-luadev")
 
 	const socket = new net.Socket();
-	socket.connect( config.get( "port", 27099 ) );
-	socket.write( "requestPlayers\n" );
-	socket.setEncoding( "utf8" );
-	socket.on( "data", function ( data: string ): void {
+	socket.connect(config.get("port", 27099));
+	socket.write("requestPlayers\n");
+	socket.setEncoding("utf8");
+	socket.on("data", function (data: string): void {
 
-		const clients = data.split( "\n" );
+		const clients = data.split("\n");
 		clients.sort();
 
 		vscode.window.showQuickPick(
@@ -65,54 +65,72 @@ function getPlayerList(): void {
 			{
 				placeHolder: "Select Client to send to"
 			}
-		).then( function ( client: string ): void {
+		).then(function (client: string): void {
 			// Dialogue cancelled
-			if ( client == null ) return;
+			if (client == null) return;
 			// Send to client
-			send( "client", client );
+			send("client", client);
 		});
 
 	});
 
 }
 
-// Exports /////////////////////////////////////////////////////////////////////
+function sendCodeUpdate(e) {
 
-function sendCodeUpdate( e ) {
 	const config = vscode.workspace.getConfiguration("gmod-luadev");
+
+
 	let document = vscode.window.activeTextEditor.document;
-	if ( e.document ) {
+	if (e.document) {
 		document = e.document;
 	}
 	let text = document.getText();
 
-	if ( config.get("chathideother", true) ) {
-		if ( !document.languageId.match("g?lua") ) {
+	if (config.get("chathideother", true)) {
+		if (!document.languageId.match("g?lua")) {
 			text = "In a " + document.languageId + " file.";
 		}
 	}
 
-	if ( config.get("chatheader", true) ) {
-		let fileName = document.fileName; // Turn file path into filename only maybe?
+	if (config.get("chatheader", true)) {
+		let fileName = document.fileName.replace(/^.*[\\\/]/gi, "")
+		/*
 		if (fileName.length > 40) {
 			fileName = "..." + fileName.substr(-40);
 		}
+		*/
 
-		let header = "[vscode - file \"" + fileName + "\", " + document.lineCount + " lines" + (document.isDirty ? " (dirty)" : "") + "]";
+		let header = "[vscode";
+		if (vscode.workspace.name !== undefined) {
+			header = header + " (" + vscode.workspace.name + ")";
+		}
+
+		header = header + " - ";
+
+		header = header + "file " + "\"" + fileName + "\"";
+		header = header + ", ";
+		header = header + document.lineCount + " line" + (document.lineCount != 1 ? "s" : "");
+		header = header + (document.isDirty ? " (dirty)" : "");
+
+		header = header + "]";
+
 		text = header + "\n\n" + text + "\n\n" + header;
 	}
 
-	if ( config.get("chattextchanged", false) ) {
+	if (config.get("chattextchanged", false)) {
 		const socket = new net.Socket();
-		socket.connect( config.get("port", 27099) );
+		socket.connect(config.get("port", 27099));
 		socket.write(
 			"chatTextChanged" + "\n" +
 			text
 		);
 		socket.end();
 	}
+
 }
 function clearCode() {
+
 	const config = vscode.workspace.getConfiguration("gmod-luadev");
 
 	if (config.get("chattextchanged", false)) {
@@ -129,24 +147,27 @@ function clearCode() {
 				vscode.window.showErrorMessage("LuaDev Socket Error - " + ex.message);
 		});
 		socket.end();
+
 	}
 }
 
-export function activate( context: vscode.ExtensionContext ): void {
+// Exports /////////////////////////////////////////////////////////////////////
+
+export function activate(context: vscode.ExtensionContext): void {
 
 	const command = vscode.commands.registerCommand;
 
 	context.subscriptions.push(
-		command( "gmod-luadev.server", () => send( "sv" ) ),
-		command( "gmod-luadev.shared", () => send( "sh" ) ),
-		command( "gmod-luadev.clients", () => send( "cl" ) ),
-		command( "gmod-luadev.self", () => send( "self" ) ),
-		command( "gmod-luadev.client", getPlayerList )
+		command("gmod-luadev.server", () => send("sv")),
+		command("gmod-luadev.shared", () => send("sh")),
+		command("gmod-luadev.clients", () => send("cl")),
+		command("gmod-luadev.self", () => send("self")),
+		command("gmod-luadev.client", getPlayerList)
 	);
 
 	vscode.workspace.onDidChangeTextDocument(sendCodeUpdate);
 	vscode.window.onDidChangeActiveTextEditor(sendCodeUpdate);
-	vscode.window.onDidChangeWindowState( (e) => {
+	vscode.window.onDidChangeWindowState((e) => {
 		if (e.focused) {
 			sendCodeUpdate(e);
 		} else {
