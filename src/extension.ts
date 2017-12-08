@@ -37,7 +37,7 @@ function send( realm: string, client?: string ): void {
 		document.getText()
 	);
 	socket.on( "error", ( ex ) => {
-		if ( ex.code == "ECONNREFUSED" )
+		if ( ex.name == "ECONNREFUSED" )
 			vscode.window.showErrorMessage(
 				"Could not connect to LuaDev!" );
 		else
@@ -78,6 +78,35 @@ function getPlayerList(): void {
 
 // Exports /////////////////////////////////////////////////////////////////////
 
+let doCodeUpdate = true;
+function sendCodeUpdate() {
+	const config = vscode.workspace.getConfiguration("gmod-luadev");
+	const document = vscode.window.activeTextEditor.document
+
+	if (config.get("chattextchanged", false)) {
+		if (doCodeUpdate) {
+			doCodeUpdate = false;
+			setTimeout( () => {
+				const socket = new net.Socket();
+				socket.connect(config.get("port", 27099));
+				socket.write(
+					"chatTextChanged" + "\n" +
+					document.getText()
+				);
+				socket.on("error", (ex) => {
+					if (ex.name == "ECONNREFUSED")
+						console.log(
+							"Could not connect to LuaDev!");
+					else
+						vscode.window.showErrorMessage(ex.message);
+				});
+				socket.end();
+				doCodeUpdate = true;
+			}, 300)
+		}
+	}
+}
+
 export function activate( context: vscode.ExtensionContext ): void {
 
 	const command = vscode.commands.registerCommand;
@@ -89,5 +118,31 @@ export function activate( context: vscode.ExtensionContext ): void {
 		command( "gmod-luadev.self", () => send( "self" ) ),
 		command( "gmod-luadev.client", getPlayerList )
 	);
+
+	vscode.workspace.onDidChangeTextDocument(sendCodeUpdate);
+	vscode.workspace.onDidOpenTextDocument(sendCodeUpdate);
+	vscode.window.onDidChangeWindowState( (e) => {
+		if (e.focused) {
+			sendCodeUpdate();
+		} else {
+			const config = vscode.workspace.getConfiguration("gmod-luadev");
+
+			if (config.get("chattextchanged", false)) {
+				const socket = new net.Socket();
+				socket.connect(config.get("port", 27099));
+				socket.write(
+					"finishChat"
+				);
+				socket.on("error", (ex) => {
+					if (ex.name == "ECONNREFUSED")
+						console.log(
+							"Could not connect to LuaDev!");
+					else
+						vscode.window.showErrorMessage(ex.message);
+				});
+				socket.end();
+			}
+		}
+	});
 
 }
