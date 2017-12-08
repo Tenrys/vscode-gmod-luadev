@@ -106,6 +106,25 @@ function sendCodeUpdate( e ) {
 		socket.end();
 	}
 }
+function clearCode() {
+	const config = vscode.workspace.getConfiguration("gmod-luadev");
+
+	if (config.get("chattextchanged", false)) {
+		const socket = new net.Socket();
+		socket.connect(config.get("port", 27099));
+		socket.write(
+			"finishChat" + "\n"
+		);
+		socket.on("error", (ex) => {
+			if (ex.name == "ECONNREFUSED")
+				console.log(
+					"Could not connect to LuaDev!");
+			else
+				vscode.window.showErrorMessage("LuaDev Socket Error - " + ex.message);
+		});
+		socket.end();
+	}
+}
 
 export function activate( context: vscode.ExtensionContext ): void {
 
@@ -125,24 +144,12 @@ export function activate( context: vscode.ExtensionContext ): void {
 		if (e.focused) {
 			sendCodeUpdate(e);
 		} else {
-			const config = vscode.workspace.getConfiguration("gmod-luadev");
-
-			if ( config.get("chattextchanged", false) ) {
-				const socket = new net.Socket();
-				socket.connect( config.get("port", 27099) );
-				socket.write(
-					"finishChat" + "\n"
-				);
-				socket.on("error", (ex) => {
-					if (ex.name == "ECONNREFUSED")
-						console.log(
-							"Could not connect to LuaDev!");
-					else
-						vscode.window.showErrorMessage("LuaDev Socket Error - " + ex.message);
-				});
-				socket.end();
-			}
+			clearCode();
 		}
 	});
 
+}
+
+export function deactivate() {
+	clearCode();
 }
