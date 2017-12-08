@@ -1,6 +1,6 @@
 # GMod LuaDev
 
-[LuaDev](https://github.com/noiwex/luadev) integration for VS Code.
+[LuaDev](https://github.com/Metastruct/luadev) integration for VS Code.
 
 Send code to LuaDev with simple shortcuts!
 
