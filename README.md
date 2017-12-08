@@ -56,6 +56,10 @@ following keybinding shortcut:
 	  the real filename.
 - `gmod-luadev.chattextchanged` (Default: `false`)
 	- If true, everytime you change the document it will be transmitted to Garry's Mod so it can be used by chat addons like chat over head.
+- `gmod-luadev.chatheader` (Default: `true`)
+	- If true, a header showing the opened file's path, line count and state (dirty or not) will show up at the top and bottom of the code.
+- `gmod-luadev.chathideother` (Default: `true`)
+	- If true, contents of files that don't have their language mode set to (G)Lua will be hidden by a message.
 
 ## Other
 

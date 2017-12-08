@@ -86,15 +86,21 @@ function sendCodeUpdate( e ) {
 	}
 	let text = document.getText();
 
-	if ( !document.languageId.match("g?lua") ) {
-		text = "In a " + document.languageId + " file.";
+	if ( config.get("chathideother", true) ) {
+		if ( !document.languageId.match("g?lua") ) {
+			text = "In a " + document.languageId + " file.";
+		}
 	}
 
-	let fileName = document.fileName;
-	if ( fileName.length > 32 ) {
-		fileName = "..." + fileName.substr(-32);
+	if ( config.get("chatheader", true) ) {
+		let fileName = document.fileName; // Turn file path into filename only maybe?
+		if (fileName.length > 40) {
+			fileName = "..." + fileName.substr(-40);
+		}
+
+		let header = "[vscode - file \"" + fileName + "\", " + document.lineCount + " lines" + (document.isDirty ? " (dirty)" : "") + "]";
+		text = header + "\n\n" + text + "\n\n" + header;
 	}
-	text = "[VSCode - " + fileName + "]\n\n" + text;
 
 	if ( config.get("chattextchanged", false) ) {
 		const socket = new net.Socket();
