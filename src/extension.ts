@@ -84,7 +84,7 @@ function sendCodeUpdate(e) {
 	if (nextUpdate > Date.now()) {
 		setTimeout(() => {
 			sendCodeUpdate(undefined)
-		}, 100);
+		}, 300);
 		return;
 	}
 
