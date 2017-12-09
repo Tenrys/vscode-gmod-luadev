@@ -55,7 +55,7 @@ function getPlayerList(): void {
 	socket.connect(config.get("port", 27099));
 	socket.write("requestPlayers\n");
 	socket.setEncoding("utf8");
-	socket.on("data", function (data: string): void {
+	socket.on("data", function(data: string): void {
 
 		const clients = data.split("\n");
 		clients.sort();
@@ -65,7 +65,7 @@ function getPlayerList(): void {
 			{
 				placeHolder: "Select Client to send to"
 			}
-		).then(function (client: string): void {
+		).then(function(client: string): void {
 			// Dialogue cancelled
 			if (client == null) return;
 			// Send to client
@@ -78,16 +78,15 @@ function getPlayerList(): void {
 
 let nextUpdate = 0;
 let updateAsap = false;
-let finished = false;
 setInterval(() => {
 	if (updateAsap && nextUpdate < Date.now()) {
-		if (!finished) {
-			sendCodeUpdate()
-		}
-		updateAsap = false;
+		sendCodeUpdate();
 	}
 }, 0)
 function sendCodeUpdate(e?) {
+
+	if (!vscode.window.state.focused)
+		return;
 
 	const config = vscode.workspace.getConfiguration("gmod-luadev");
 
@@ -95,8 +94,8 @@ function sendCodeUpdate(e?) {
 		updateAsap = true;
 		return;
 	}
-	finished = false;
-	nextUpdate = Date.now() + 300
+	updateAsap = false;
+	nextUpdate = Date.now() + 300;
 
 	let document = vscode.window.activeTextEditor.document;
 	if (e && e.document) {
@@ -156,15 +155,7 @@ function clearCode() {
 		socket.write(
 			"finishChat" + "\n"
 		);
-		socket.on("error", (ex) => {
-			if (ex.name == "ECONNREFUSED")
-				console.log(
-					"Could not connect to LuaDev!");
-			else
-				vscode.window.showErrorMessage("LuaDev Socket Error - " + ex.message);
-		});
 		socket.end();
-		finished = true;
 	}
 }
 
